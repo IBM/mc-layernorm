@@ -1,19 +1,20 @@
-from typing import List
-from typing import Union
+from typing import List, Union
+
 import torch
 
 _shape_t = Union[int, List[int], torch.Size]
 
 
 class MCLayerNorm(torch.nn.LayerNorm):
-    def __init__(self,
-                 normalized_shape: _shape_t,
-                 drop_rate: float = 0.2,
-                 eps: float = 1e-5,
-                 elementwise_affine: bool = True,
-                 mc_mode: bool = False,
-                 device=None):
-
+    def __init__(
+        self,
+        normalized_shape: _shape_t,
+        drop_rate: float = 0.2,
+        eps: float = 1e-5,
+        elementwise_affine: bool = True,
+        mc_mode: bool = False,
+        device=None,
+    ):
         # Note: element_wise affine is not passed because of timm
         # zero_ bug when weight is None
         super().__init__(normalized_shape, eps=eps, device=device)
@@ -44,20 +45,23 @@ class MCLayerNorm(torch.nn.LayerNorm):
 
 
 class MCLayerNorm2d(MCLayerNorm):
-    def __init__(self,
-                 normalized_shape: _shape_t,
-                 drop_rate: float = 0.2,
-                 eps: float = 1e-5,
-                 elementwise_affine: bool = True,
-                 mc_mode: bool = False,
-                 device=None):
-
-        super().__init__(normalized_shape=normalized_shape,
-                         drop_rate=drop_rate,
-                         eps=eps,
-                         elementwise_affine=elementwise_affine,
-                         mc_mode=mc_mode,
-                         device=device)
+    def __init__(
+        self,
+        normalized_shape: _shape_t,
+        drop_rate: float = 0.2,
+        eps: float = 1e-5,
+        elementwise_affine: bool = True,
+        mc_mode: bool = False,
+        device=None,
+    ):
+        super().__init__(
+            normalized_shape=normalized_shape,
+            drop_rate=drop_rate,
+            eps=eps,
+            elementwise_affine=elementwise_affine,
+            mc_mode=mc_mode,
+            device=device,
+        )
 
     def forward(self, x: torch.Tensor):
         # Permute for 2d layer norm, and reverse afterwards
@@ -68,7 +72,6 @@ class MCLayerNorm2d(MCLayerNorm):
         return x_norm
 
 
-@torch.jit.script  # noqa
 def subsample(x: torch.Tensor, drop_rate: float) -> torch.Tensor:
     rand = torch.empty_like(x, dtype=torch.float).uniform_()
     idx = rand.topk(int(x.shape[-1] * (1 - drop_rate)), dim=-1).indices
